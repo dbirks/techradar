@@ -1,0 +1,15 @@
+{
+  "nathan": [
+    "read"
+  ],
+  "bryan": [
+    "read"
+  ],
+  "courtney": [
+    "read",
+    "write"
+  ],
+  "kurt": [
+    "read"
+  ]
+}
