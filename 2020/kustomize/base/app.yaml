@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: widget-store
+  name: widget-store
+spec:
+  progressDeadlineSeconds: 60
+  replicas: 1
+  selector:
+    matchLabels:
+      app: widget-store
+  template:
+    metadata:
+      labels:
+        app: widget-store
+    spec:
+      containers:
+        - name: widget-store
+          image: replaced-by-kustomize
+          imagePullPolicy: Always
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+          ports:
+            - containerPort: 8080
+          env:
+            - name: DB_NAME
+              value: services
+            - name: DB_SCHEMA
+              value: widget
+          envFrom:
+            - configMapRef:
+                name: widget-store-env
+            - secretRef:
+                name: widget-store-env
+          resources:
+            requests:
+              cpu: 500m
+              memory: 64Mi
+            limits:
+              cpu: 800m
+              memory: 128Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: widget-store
+  name: widget-store
+spec:
+  ports:
+    - name: http
+      port: 80
+      protocol: TCP
+      targetPort: 8080
+  selector:
+    app: widget-store
+  type: ClusterIP

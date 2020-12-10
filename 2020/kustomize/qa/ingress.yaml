@@ -1,0 +1,12 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: widget-store
+spec:
+  rules:
+    - host: widget-store.qa.example.com
+      http:
+        paths:
+          - backend:
+              serviceName: widget-store
+              servicePort: 80

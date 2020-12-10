@@ -1,0 +1,13 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+bases:
+  - ../base
+namespace: hotfix
+images:
+  - name: replaced-by-kustomize
+    newName: 000000000000.dkr.ecr.us-east-2.amazonaws.com/widget-store
+    newTag: replaced-by-sed
+resources:
+  - ingress.yaml
+  - secret.yaml
+  - configmap.yaml
