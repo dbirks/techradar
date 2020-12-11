@@ -1,22 +1,27 @@
 # Tekton
 
 Tech Radar:
+
 https://www.thoughtworks.com/radar/platforms?blipid=202010094
 
 Homepage:
+
 https://tekton.dev/
 
 Katacoda playground:
+
 https://tekton.dev/try/
 
 ## About
 
 Several components:
+
 https://tekton.dev/docs/overview/#what-are-the-components-of-tekton
 
 ## Demo
 
 Modified from:
+
 https://github.com/tektoncd/pipeline/blob/master/docs/tutorial.md
 
 ### Goal
@@ -84,4 +89,5 @@ kubectl apply -f tekton-dashboard/ingress.yaml
 ```
 
 You'll now be able to see the dashboard at:
+
 http://tekton-dashboard.127.0.0.1.xip.io
