@@ -1,0 +1,30 @@
+apiVersion: tekton.dev/v1alpha1
+kind: PipelineResource
+metadata:
+  name: busybox-git
+spec:
+  type: git
+  params:
+    - name: revision
+      value: master
+    - name: url
+      value: https://github.com/docker-library/busybox.git
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: build-busybox-image
+spec:
+  resources:
+    inputs:
+      - name: source-repo
+        type: git
+  steps:
+    - name: build-and-push
+      image: gcr.io/kaniko-project/executor:v1.3.0
+      command:
+        - /kaniko/executor
+      args:
+        - --dockerfile=musl/Dockerfile.builder
+        - --context=$(resources.inputs.source-repo.path)
+        - --no-push
