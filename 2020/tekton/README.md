@@ -34,13 +34,13 @@ Build a busybox image.
 - [helm](https://helm.sh/)
 - [tekton-cli](https://github.com/tektoncd/cli)
 
-### Start up local Kubernetes cluster
+Start up local Kubernetes cluster:
 
 ```
 kind create cluster --config kind/config.yaml
 ```
 
-### Set up ingress-nginx, so we can view the dashboard from localhost
+Set up ingress-nginx, so we can view the dashboard from localhost:
 
 ```
 kubectl create namespace ingress
@@ -55,33 +55,39 @@ helm install \
   ingress-nginx/ingress-nginx
 ```
 
-### Install Tekton Pipelines
+Install Tekton Pipelines:
 
 ```
 kubectl apply -f https://storage.googleapis.com/tekton-releases/pipeline/previous/v0.19.0/release.yaml
 ```
 
-### Apply the `PipelineResource` and `Task`
+Apply the `PipelineResource` and `Task`:
 
 ```
-kubectl apply -f build-image.yaml
+kubectl apply -f build-busybox-image.yaml
 ```
 
-### View created Tekton resources
+View created Tekton resources:
 
 ```
 tkn resource list
 tkn task list
 ```
 
-### Start a TaskRun
+Start a TaskRun:
 
 ```
 tkn task start build-busybox-image --inputresource=source-repo=busybox-git
-tkn taskrun list
 ```
 
-### Install Tekton Dashboard
+View build logs:
+
+```
+tkn taskrun list
+tkn taskrun logs build-busybox-image-run-v5wl7 -f
+```
+
+Install Tekton Dashboard:
 
 ```
 kubectl apply -f https://github.com/tektoncd/dashboard/releases/download/v0.11.1/tekton-dashboard-release.yaml
@@ -91,3 +97,9 @@ kubectl apply -f tekton-dashboard/ingress.yaml
 You'll now be able to see the dashboard at:
 
 http://tekton-dashboard.127.0.0.1.xip.io
+
+Clean up:
+
+```
+kind delete cluster
+```
