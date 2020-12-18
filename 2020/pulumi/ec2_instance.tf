@@ -5,8 +5,6 @@ resource "aws_instance" "widget_store" {
   availability_zone    = "us-east-2b"
   iam_instance_profile = aws_iam_instance_profile.widget_store_instance_profile.id
 
-  # subnet_id = element(tolist(data.aws_subnet_ids.public.ids), 3)
-
   tags = {
     Name = "widget_store"
   }
@@ -21,9 +19,4 @@ resource "aws_instance" "widget_store" {
 
   # The userdata script to call on each deploy
   user_data = file("./userdata.sh")
-
-  # Uncomment this to not recreate the EC2 instance due to a newer AMI.
-  #lifecycle {
-  #  ignore_changes = [ami]
-  #}
 }

@@ -2,7 +2,6 @@
 resource "aws_security_group" "widget_store" {
   name        = "widget_store"
   description = "Only allow certain traffic to the store"
-  # vpc_id      = data.aws_vpc.vpc.id
 
   tags = {
     Name = "Widget Store"
