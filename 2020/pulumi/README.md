@@ -24,6 +24,7 @@ https://www.pulumi.com/docs/aws/ecr/
 ### Run Pulumi
 
 ```
+npm i --save @pulumi/aws
 pulumi config set aws:region us-east-2
 pulumi up
 ```
