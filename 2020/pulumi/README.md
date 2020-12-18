@@ -17,7 +17,11 @@ https://www.pulumi.com/docs/guides/adopting/from_terraform/
 pulumi new typescript -f
 ```
 
+### Set up an ECR repo
+
 https://www.pulumi.com/docs/aws/ecr/
+
+### Run Pulumi
 
 ```
 pulumi config set aws:region us-east-2
