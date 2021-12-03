@@ -1,0 +1,5 @@
+{
+    "markdown.marp.themes": [
+        "https://raw.githubusercontent.com/matsubara0507/marp-themes/master/themes/colors.css",
+    ]
+}
