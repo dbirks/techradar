@@ -36,57 +36,56 @@ Deploy ingress-nginx with:
 
 ```
 helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
-helm install ingress-nginx ingress-nginx/ingress-nginx --values ingress-nginx/values.yaml
+helm install ingress-nginx ingress-nginx/ingress-nginx --values ingress-nginx/values.yaml --namespace kube-system
 ```
 
 Deploy wordpress with:
 
 ```
 helm repo add bitnami https://charts.bitnami.com/bitnami
-helm install wordpress bitnami/wordpress
 helm install wordpress bitnami/wordpress --values wordpress/values.yaml
 ```
 
+The end of the output from helm will give you a command to run to grab the default user's password.
+
+You'll then be able to reach WordPress at: http://wordpress.127.0.0.1.nip.io/
+
 ## Kubeshark demo
 
+Targeting just one namespace:
+
+```
 kubeshark deploy
+```
 
-ks-hub
-ks-front
+Launches the pods:
+- `ks-hub`
+- `ks-front`
 
+Deploy DaemonSet to all nodes, to intercept traffic from all pods in all namespaces:
 
-
+```
 kubeshark deploy -A
+```
 
-intercepts traffic from all pods in all namespaces
-
-ks-worker-daemon-set-l59nb
-
-
-
-
-todo:
-- ingress-nginx
-- wordpress
-- 
-
-
+Launches an additional Pod from the DaemonSet, named like:
+- `ks-worker-daemon-set-l59nb`
 
 ## Alternatives
 
 ksniff
 
-Cillium + Pixie ?
+Or maybe something like a service mesh?
+- LinkerD: https://linkerd.io/
+- Istio: https://istio.io/
+- Cilium + Hubble: https://github.com/cilium/hubble
+- Pixie: https://px.dev/
 
 LinkerD
 
-
-
-
-
 ## Cons
 
-repo in flux
-no brew yet
-no helm chart?
-
+- repo and docs aren't complete (because of recent name change?)
+- no homebrew install option yet
+  - upstream issue: https://github.com/kubeshark/kubeshark/issues/1229
+- no helm chart?
