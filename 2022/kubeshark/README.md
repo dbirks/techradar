@@ -8,7 +8,7 @@ Homepage: https://kubeshark.co/
 
 ## Prereqs
 
-Install the kubeshark binary
+Install the kubeshark binary:
 - either with their install script: https://docs.kubeshark.co/en/install
 - or from the Github Releases (recommended): https://github.com/kubeshark/kubeshark/releases
 - or by cloning their repo and running `make build`
@@ -80,8 +80,6 @@ Or maybe something like a service mesh?
 - Istio: https://istio.io/
 - Cilium + Hubble: https://github.com/cilium/hubble
 - Pixie: https://px.dev/
-
-LinkerD
 
 ## Cons
 
