@@ -8,19 +8,11 @@ Homepage: https://www.seldon.io/solutions/open-source-projects/core
 
 Documentation: https://docs.seldon.io/projects/seldon-core/en/latest/
 
-## Description
+## Slides
 
-
-
-## Alternatives
-
-
-
-## Cons
-
-
+[slides.pdf](slides.pdf)
 
 ## Recommendation
 
 Tech Radar recommendation: Trial
-My recommendation: 
+My recommendation: Trial
