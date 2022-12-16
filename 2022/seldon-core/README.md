@@ -15,4 +15,5 @@ Documentation: https://docs.seldon.io/projects/seldon-core/en/latest/
 ## Recommendation
 
 Tech Radar recommendation: Trial
+
 My recommendation: Trial
