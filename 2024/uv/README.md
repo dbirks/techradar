@@ -6,17 +6,11 @@ Docs: https://docs.astral.sh/uv
 
 Github: https://github.com/astral-sh/uv
 
-### About uv
-
-- 
-
-
 ### About the company behind it
 
 Astral
   - good open source citizens / participants
     - helping to maintain [python-build-standalone](https://github.com/indygreg/python-build-standalone) that they use
-
 
 ### More links
 
