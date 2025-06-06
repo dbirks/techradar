@@ -84,6 +84,25 @@ class AgentOutput(BaseModel):
     dependencies: list[Dependency]
 
 
+def display_output_in_a_table(result: AgentOutput):
+    try:
+        # Display the results in a table
+        print()
+        console = Console()
+        table = Table(title="Dependency List")
+        table.add_column("Name", style="green")
+        table.add_column("Version", style="blue")
+        table.add_column("Published Date", style="orange")
+        for dependency in result.output.dependencies:
+            table.add_row(
+                dependency.name, dependency.version, dependency.published_date
+            )
+        console.print(table)
+        print()
+    except Exception as e:
+        print(f"Error displaying table: {e}")
+
+
 async def main():
     load_dotenv(override=True)
 
@@ -101,9 +120,12 @@ async def main():
 
     # Init the agent
     agent = Agent(
-        model="claude-sonnet-4-20250514",
+        # model="claude-sonnet-4-20250514",
+        model="claude-3-5-haiku-latest",
         instructions=dedent("""
-            You are a helpful assistant who is trying to help the user do a quick search of a repo to find dependencies to upgrade.
+            You are a helpful assistant who is trying to help the user do a quick search of a repo to find dependencies to upgrade. You need to be targeted in your approach, as to not take too long. If you wonder if you're on the right track, ask the user.
+
+            Focus on the basic files listing dependencies, and come back to the user quickly to see if you should continue.
 
             First, get a list of the directory structure you're in.
 
@@ -118,32 +140,42 @@ async def main():
         ],
         tools=[
             Tool(find_package_published_date),
-            Tool(search_current_directory_for_string),
+            # Tool(search_current_directory_for_string),
         ],
         usage_limits=UsageLimits(request_limit=100),
         output_type=AgentOutput,
-        retries=200,
+        retries=3,
     )
+
+    @agent.output_validator
+    def ask_human(output: AgentOutput) -> AgentOutput:
+        """
+        Ask the user whether to continue, or for more direction.
+
+        Args:
+            output: Your output so far.
+            notes: Any notes you have about the progress so far.
+
+        Returns:
+            The output of the agent.
+        """
+        # Prompt the user whether to continue
+        display_output_in_a_table(output)
+        console = Console()
+        console.print(
+            "Does the above look correct? Press 'y' to continue, or type anything else to retry."
+        )
+        user_response = console.input("> ").lower()
+        if user_response != "y":
+            raise ModelRetry(f"User wants to retry, with the message: {user_response}")
+        return output
 
     # Run the agent
     async with agent.run_mcp_servers():
-        result = await agent.run(
-            "Search for any dependencies in the current directory."
-        )
+        result = await agent.run("Search for dependencies in the current directory.")
 
     print(result)
-
-    # Display the results in a table
-    print()
-    console = Console()
-    table = Table(title="Dependency List")
-    table.add_column("Name", style="green")
-    table.add_column("Version", style="blue")
-    table.add_column("Published Date", style="orange")
-    for dependency in result.output.dependencies:
-        table.add_row(dependency.name, dependency.version, dependency.published_date)
-    console.print(table)
-    print()
+    display_output_in_a_table(result)
 
 
 if __name__ == "__main__":
