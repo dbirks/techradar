@@ -18,6 +18,7 @@ from pydantic import BaseModel
 from pydantic_ai import Agent, ModelRetry
 from pydantic_ai.mcp import MCPServerStdio
 from pydantic_ai.tools import Tool
+from pydantic_ai.usage import UsageLimits
 from rich.console import Console
 from rich.table import Table
 
@@ -89,7 +90,7 @@ async def main():
     logfire.configure()
     logfire.instrument_pydantic_ai()
     # logfire.instrument_mcp()
-    # logfire.instrument_anthropic()
+    logfire.instrument_anthropic()
 
     # Use an MCP server to search the filesystem, restricted to just the current directory you're in.
     # This MCP server provides many tools for the agent to use.
@@ -102,13 +103,15 @@ async def main():
     agent = Agent(
         model="claude-sonnet-4-20250514",
         instructions=dedent("""
-            You are a helpful assistant who is trying to help the user upgrade packages in a repo.
+            You are a helpful assistant who is trying to help the user do a quick search of a repo to find dependencies to upgrade.
 
-            First get a list of the directory structure you're in.
+            First, get a list of the directory structure you're in.
 
-            Then read the specific files that are likely to have dependency information in them.
+            Then read in files like pom.xml, Dockerfile, or anything similar that might contain dependency information.
 
-            Then after you've found all the dependencies, use the `find_package_published_date` tool to try to find the published date for each dependency.
+            That will give you a list of dependencies and each one's version if it has one.
+
+            Then for each one that you have an exact version for, use the `find_package_published_date` tool to try to find the published date for each dependency.
         """),
         mcp_servers=[
             filesystem_search,
@@ -117,8 +120,9 @@ async def main():
             Tool(find_package_published_date),
             Tool(search_current_directory_for_string),
         ],
+        usage_limits=UsageLimits(request_limit=100),
         output_type=AgentOutput,
-        retries=100,
+        retries=200,
     )
 
     # Run the agent
