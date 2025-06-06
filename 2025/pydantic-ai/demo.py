@@ -3,6 +3,7 @@
 # dependencies = [
 #     "duckduckgo-search==8.0.2",
 #     "pydantic-ai-slim[anthropic,logfire,mcp]",
+#     "python-dotenv==1.1.0",
 #     "rich",
 # ]
 # ///
@@ -10,16 +11,19 @@
 import subprocess
 from textwrap import dedent
 
+from rich.table import Table
+from rich.console import Console
 import logfire
+from dotenv import load_dotenv
 from duckduckgo_search import DDGS
 from pydantic import BaseModel
-from pydantic_ai import Agent
+from pydantic_ai import Agent, ModelRetry
 from pydantic_ai.mcp import MCPServerStdio
 from pydantic_ai.tools import Tool
 
 
 # Define a tool that the agent can use to search the web
-def find_package_published_date(dependency_name: str, version: str) -> str:
+def find_package_published_date(dependency_name: str, version: str = "") -> str:
     """
     Use this to search the web for information about a package, specifically a published date for the specific version.
 
@@ -38,18 +42,29 @@ def find_package_published_date(dependency_name: str, version: str) -> str:
     return results
 
 
-def search_current_directory_for_string(string: str) -> str:
+def search_current_directory_for_string(search_string: str) -> str:
     """
     Use this to search the current directory for a specific string with ripgrep.
 
     Args:
-        string: The string to search for.
+        search_string: The string to search for.
 
     Returns:
-        Raw text from the top 3 results of the web search.
+        The results of the ripgrep search.
     """
-    results = subprocess.check_output(["rg", string])
-    return results.decode("utf-8")
+
+    # run rg with the string
+    try:
+        result = subprocess.run(
+            ["rg", "--", search_string],
+            check=True,
+            text=True,
+            capture_output=True,
+        )
+    except Exception as e:
+        raise ModelRetry(f'Couldn\'t find results for string: "{search_string}"') from e
+
+    return result.stdout
 
 
 # Define the exact type we want the agent to output
@@ -64,9 +79,12 @@ class AgentOutput(BaseModel):
 
 
 async def main():
-    logfire.configure(send_to_logfire=False)
+    load_dotenv(override=True)
+
+    logfire.configure()
     logfire.instrument_pydantic_ai()
-    logfire.mcp()
+    # logfire.instrument_mcp()
+    # logfire.instrument_anthropic()
 
     # Use an MCP server to search the filesystem, restricted to just the current directory you're in.
     # This MCP server provides many tools for the agent to use.
@@ -81,9 +99,13 @@ async def main():
         instructions=dedent("""
             You are a helpful assistant who is trying to help the user upgrade packages in a repo.
 
-            Do a thorough search of the current directory you're in to find any and all dependencies, with their version number.
-
-            Then, use the `find_package_published_date` tool to try to find the published date for each dependency.
+            Do a thorough search of the current directory you're in to find all dependencies, with their version number. To do so, you have options:
+              - The tools provided by the filesystem MCP server
+              - The tool `search_current_directory_for_string` to search for a specific string in the current directory
+                - Default to using this tool if you need a quick and simple search for a string using ripgrep
+              - Some dependencies may not have version numbers defined though, and that's ok. Continue on while still keeping track of the dependency name.
+              
+            Then after you've found all the dependencies, use the `find_package_published_date` tool to try to find the published date for each dependency.
         """),
         mcp_servers=[
             filesystem_search,
@@ -93,13 +115,22 @@ async def main():
             Tool(search_current_directory_for_string),
         ],
         output_type=AgentOutput,
+        retries=100,
     )
 
     # Run the agent
     async with agent.run_mcp_servers():
         await agent.run("Search for any dependencies in the current directory.")
 
-    print(agent.output)
+    # Display the results in a table
+    console = Console()
+    table = Table(title="Dependency List")
+    table.add_column("Name")
+    table.add_column("Version")
+    table.add_column("Published Date")
+    for dependency in agent.dependencies:
+        table.add_row(dependency.name, dependency.version, dependency.published_date)
+    console.print(table)
 
 
 if __name__ == "__main__":
