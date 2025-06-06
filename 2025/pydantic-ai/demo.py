@@ -11,8 +11,6 @@
 import subprocess
 from textwrap import dedent
 
-from rich.table import Table
-from rich.console import Console
 import logfire
 from dotenv import load_dotenv
 from duckduckgo_search import DDGS
@@ -20,6 +18,8 @@ from pydantic import BaseModel
 from pydantic_ai import Agent, ModelRetry
 from pydantic_ai.mcp import MCPServerStdio
 from pydantic_ai.tools import Tool
+from rich.console import Console
+from rich.table import Table
 
 
 # Define a tool that the agent can use to search the web
@@ -35,10 +35,15 @@ def find_package_published_date(dependency_name: str, version: str = "") -> str:
         Raw text from the top 3 results of the web search.
         You can then search this text for the published date for the specific version.
     """
-    results: str = DDGS().text(
-        keywords=f"published date for version {version} of {dependency_name}",
-        max_results=3,
-    )
+    try:
+        results: str = DDGS().text(
+            keywords=f"published date for version {version} of {dependency_name}",
+            max_results=3,
+        )
+    except Exception as e:
+        raise ModelRetry(
+            f'Couldn\'t find results for package: "{dependency_name}"'
+        ) from e
     return results
 
 
@@ -99,12 +104,10 @@ async def main():
         instructions=dedent("""
             You are a helpful assistant who is trying to help the user upgrade packages in a repo.
 
-            Do a thorough search of the current directory you're in to find all dependencies, with their version number. To do so, you have options:
-              - The tools provided by the filesystem MCP server
-              - The tool `search_current_directory_for_string` to search for a specific string in the current directory
-                - Default to using this tool if you need a quick and simple search for a string using ripgrep
-              - Some dependencies may not have version numbers defined though, and that's ok. Continue on while still keeping track of the dependency name.
-              
+            First get a list of the directory structure you're in.
+
+            Then read the specific files that are likely to have dependency information in them.
+
             Then after you've found all the dependencies, use the `find_package_published_date` tool to try to find the published date for each dependency.
         """),
         mcp_servers=[
@@ -120,17 +123,23 @@ async def main():
 
     # Run the agent
     async with agent.run_mcp_servers():
-        await agent.run("Search for any dependencies in the current directory.")
+        result = await agent.run(
+            "Search for any dependencies in the current directory."
+        )
+
+    print(result)
 
     # Display the results in a table
+    print()
     console = Console()
     table = Table(title="Dependency List")
-    table.add_column("Name")
-    table.add_column("Version")
-    table.add_column("Published Date")
-    for dependency in agent.dependencies:
+    table.add_column("Name", style="green")
+    table.add_column("Version", style="blue")
+    table.add_column("Published Date", style="orange")
+    for dependency in result.output.dependencies:
         table.add_row(dependency.name, dependency.version, dependency.published_date)
     console.print(table)
+    print()
 
 
 if __name__ == "__main__":
