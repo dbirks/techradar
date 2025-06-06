@@ -78,6 +78,7 @@ class Dependency(BaseModel):
     name: str
     version: str
     published_date: str
+    file_found_in: str
 
 
 class AgentOutput(BaseModel):
@@ -92,10 +93,14 @@ def display_output_in_a_table(result: AgentOutput):
         table = Table(title="Dependency List")
         table.add_column("Name", style="green")
         table.add_column("Version", style="blue")
-        table.add_column("Published Date", style="orange")
-        for dependency in result.output.dependencies:
+        table.add_column("Published Date", style="yellow")
+        table.add_column("File Found In", style="white")
+        for dependency in result.dependencies:
             table.add_row(
-                dependency.name, dependency.version, dependency.published_date
+                dependency.name,
+                dependency.version,
+                dependency.published_date,
+                dependency.file_found_in,
             )
         console.print(table)
         print()
@@ -109,7 +114,7 @@ async def main():
     logfire.configure()
     logfire.instrument_pydantic_ai()
     # logfire.instrument_mcp()
-    logfire.instrument_anthropic()
+    # logfire.instrument_anthropic()
 
     # Use an MCP server to search the filesystem, restricted to just the current directory you're in.
     # This MCP server provides many tools for the agent to use.
