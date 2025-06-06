@@ -83,6 +83,7 @@ class Dependency(BaseModel):
 
 class AgentOutput(BaseModel):
     dependencies: list[Dependency]
+    general_notes_on_progress: str
 
 
 def display_output_in_a_table(result: AgentOutput):
@@ -164,9 +165,11 @@ async def main():
         Returns:
             The output of the agent.
         """
+        console = Console()
         # Prompt the user whether to continue
         display_output_in_a_table(output)
-        console = Console()
+        console.print(output.general_notes_on_progress)
+        print()
         console.print(
             "Does the above look correct? Press 'y' to continue, or type anything else to retry."
         )
@@ -179,8 +182,7 @@ async def main():
     async with agent.run_mcp_servers():
         result = await agent.run("Search for dependencies in the current directory.")
 
-    print(result)
-    display_output_in_a_table(result)
+    display_output_in_a_table(result.output)
 
 
 if __name__ == "__main__":
