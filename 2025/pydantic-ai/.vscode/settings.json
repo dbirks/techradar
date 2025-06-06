@@ -1,0 +1,4 @@
+{
+    // The ty extension recommended to disable the normal language server
+    "python.languageServer": "None"
+}
