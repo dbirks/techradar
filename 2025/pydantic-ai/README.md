@@ -10,5 +10,3 @@ Github: https://github.com/pydantic/pydantic-ai
 
 - What is an agent?
   - An LLM given tools, with a loop
-
-
