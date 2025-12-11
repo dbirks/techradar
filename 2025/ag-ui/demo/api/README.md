@@ -6,8 +6,7 @@ A complete AI agent implementation using Pydantic AI, Claude 4.5, and the AG-UI 
 
 - **Anthropic Claude 4.5** - Latest Claude Sonnet model
 - **Weather Tool** - Fetch weather data from wttr.in for any location
-- **Context7 MCP Server** - Up-to-date code documentation and context
-- **E-gineering MCP Server** - Additional MCP capabilities with OAuth
+- **Context7 MCP Server** - Up-to-date code documentation (free tier)
 - **AG-UI Protocol** - Stream responses to React/TypeScript frontends
 - **Logfire Observability** - Built-in tracing and monitoring
 - **PEP 723** - Single-file script with inline dependencies
@@ -19,12 +18,10 @@ A complete AI agent implementation using Pydantic AI, Claude 4.5, and the AG-UI 
    cp .env.example .env
    ```
 
-2. **Edit `.env` and add your credentials:**
+2. **Edit `.env` and add your API key:**
    ```env
    ANTHROPIC_API_KEY=sk-ant-xxxxx
-   CONTEXT7_API_KEY=your_context7_key_here
-   MCP_OAUTH_TOKEN=your_oauth_token_here
-   LOGFIRE_TOKEN=your_logfire_token_here
+   LOGFIRE_TOKEN=your_logfire_token_here  # optional
    ```
 
 3. **Run the agent:**
@@ -39,8 +36,6 @@ The server will start on `http://localhost:8000`
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `ANTHROPIC_API_KEY` | Yes | Your Anthropic API key from https://console.anthropic.com/ |
-| `CONTEXT7_API_KEY` | No | Context7 API key (works on free tier without key) |
-| `MCP_OAUTH_TOKEN` | No | OAuth token for mcp.e-gineering.com/mcp |
 | `LOGFIRE_TOKEN` | No | Logfire token for observability (optional) |
 | `HOST` | No | Server host (default: 0.0.0.0) |
 | `PORT` | No | Server port (default: 8000) |
@@ -60,32 +55,7 @@ Provides up-to-date code documentation and context from the Context7 service.
 - Context-aware code explanations
 - Repository insights
 
-**Note:** Works on free tier without an API key! Add `CONTEXT7_API_KEY` for higher rate limits.
-
-### 3. E-gineering MCP Server (`eg_mcp`)
-Connects to the E-gineering MCP server for additional capabilities.
-
-**Note:** Requires `MCP_OAUTH_TOKEN` to be set.
-
-## MCP Server Authentication
-
-**Important:** Pydantic AI's `MCPServerTool` currently only supports **static token authentication**. Dynamic Client Registration (DCR) is not yet supported.
-
-### Context7 Setup
-
-**Good news:** Context7 works out of the box without an API key on the free tier!
-
-For higher rate limits (optional):
-1. Create an account at https://context7.com/dashboard
-2. Generate an API key
-3. Add it to your `.env` file as `CONTEXT7_API_KEY`
-
-### E-gineering MCP Setup
-1. Obtain an OAuth token for mcp.e-gineering.com/mcp
-2. Add it to your `.env` file as `MCP_OAUTH_TOKEN`
-3. The E-gineering tool will automatically be enabled
-
-Both MCP servers are optional. The agent will work with just the weather tool if no MCP tokens are provided.
+**Note:** Uses free tier - no API key required!
 
 ## Observability with Logfire
 
@@ -171,14 +141,12 @@ curl -X POST http://localhost:8000 \
 ┌─────────────┐
 │    Agent    │  Claude 4.5 with tools
 │  (Pydantic  │  - get_weather
-│     AI)     │  - context7 (if token set)
-└──────┬──────┘  - eg_mcp (if token set)
+│     AI)     │  - context7 (free tier)
+└──────┬──────┘
        │
        ├─────► wttr.in (weather)
        │
-       ├─────► mcp.context7.com/mcp (code docs)
-       │
-       └─────► mcp.e-gineering.com/mcp
+       └─────► mcp.context7.com/mcp (code docs)
 ```
 
 ## Troubleshooting
@@ -187,7 +155,7 @@ curl -X POST http://localhost:8000 \
 Add your Anthropic API key to the `.env` file.
 
 ### "Optional MCP servers not configured"
-This is just a warning. The agent will work without MCP tools if no tokens are provided. You can add Context7 and/or E-gineering MCP tokens at any time.
+Context7 MCP works on the free tier without requiring any tokens.
 
 ### Logfire not logging
 Make sure `LOGFIRE_TOKEN` is set in your `.env` file, or omit it to skip observability.

@@ -1,0 +1,11 @@
+.app-container {
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Ensure CopilotKit chat fills the container */
+:global(.copilot-chat) {
+  height: 100%;
+}

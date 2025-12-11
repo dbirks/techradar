@@ -1,0 +1,50 @@
+version: "3"
+
+output: prefixed
+
+tasks:
+  default:
+    desc: Show available tasks
+    cmds:
+      - task --list
+
+  # Main commands
+  dev:
+    desc: Start both backend and frontend (installs deps automatically)
+    deps: [dev:api, dev:ui]
+
+  dev:api:
+    desc: Start Pydantic AI backend on port 8000
+    dir: demo/api
+    cmds:
+      - uv run agent.py
+
+  dev:ui:
+    desc: Start CopilotKit UI on port 5173
+    dir: demo/ui-copilotkit
+    cmds:
+      - pnpm install
+      - pnpm dev
+
+  dev:kill:
+    desc: Kill dev servers on ports 8000 and 5173
+    cmds:
+      - lsof -ti:8000 | xargs -r kill -9 || true
+      - lsof -ti:5173 | xargs -r kill -9 || true
+      - echo "Killed processes on ports 8000 and 5173"
+
+  install:
+    desc: Install all dependencies
+    deps: [install:api, install:ui]
+
+  install:api:
+    desc: Install backend dependencies (uses PEP 723)
+    dir: demo/api
+    cmds:
+      - echo "Backend uses PEP 723 - dependencies installed automatically by 'uv run'"
+
+  install:ui:
+    desc: Install frontend dependencies
+    dir: demo/ui-copilotkit
+    cmds:
+      - pnpm install

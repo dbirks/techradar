@@ -2,8 +2,7 @@
 # /// script
 # requires-python = ">=3.11"
 # dependencies = [
-#     "pydantic-ai[anthropic,logfire]>=0.0.1",
-#     "pydantic-ai-ui[ag-ui]>=0.0.1",
+#     "pydantic-ai[anthropic,logfire,ag-ui]>=0.0.1",
 #     "httpx>=0.27.0",
 #     "uvicorn>=0.30.0",
 #     "python-dotenv>=1.0.0",
@@ -17,7 +16,6 @@ This script demonstrates a complete Pydantic AI agent setup with:
 - Anthropic Claude 4.5 as the LLM
 - Weather lookup tool (wttr.in)
 - Context7 MCP server (up-to-date code documentation)
-- E-gineering MCP server (additional capabilities)
 - AG-UI integration for streaming responses to a frontend
 - Logfire observability integration
 
@@ -40,8 +38,8 @@ import logfire
 env_path = Path(__file__).parent / ".env"
 load_dotenv(env_path)
 
-# Configure Logfire for observability
-logfire.configure()
+# Configure Logfire for local observability only (no cloud sending)
+logfire.configure(send_to_logfire=False)
 logfire.info("Initializing Pydantic AI Agent with AG-UI")
 
 
@@ -49,39 +47,18 @@ logfire.info("Initializing Pydantic AI Agent with AG-UI")
 mcp_tools = []
 enabled_tools = ["get_weather"]
 
-# Context7 MCP Server - Up-to-date code documentation (works without API key)
-context7_key = os.getenv("CONTEXT7_API_KEY", "")
+# Context7 MCP Server - Up-to-date code documentation (free tier)
 mcp_tools.append(
     MCPServerTool(
         id="context7",
         url="https://mcp.context7.com/mcp",
-        authorization_token=context7_key,
+        authorization_token="",
         allowed_tools=["*"],
         description="Context7 MCP server for up-to-date code documentation and context",
-        headers={
-            "Authorization": f"Bearer {context7_key}",
-            "Content-Type": "application/json",
-        } if context7_key else {"Content-Type": "application/json"}
+        headers={"Content-Type": "application/json"}
     )
 )
 enabled_tools.append("context7")
-
-# E-gineering MCP Server
-if os.getenv("MCP_OAUTH_TOKEN"):
-    mcp_tools.append(
-        MCPServerTool(
-            id="eg_mcp",
-            url="https://mcp.e-gineering.com/mcp",
-            authorization_token=os.getenv("MCP_OAUTH_TOKEN", ""),
-            allowed_tools=["*"],
-            description="E-gineering MCP server with various capabilities",
-            headers={
-                "Authorization": f"Bearer {os.getenv('MCP_OAUTH_TOKEN', '')}",
-                "Content-Type": "application/json",
-            }
-        )
-    )
-    enabled_tools.append("eg_mcp")
 
 
 # Initialize the agent with Anthropic Claude 4.5
@@ -91,7 +68,6 @@ agent = Agent(
     instructions="""You are a helpful assistant with access to:
     1. Weather information via wttr.in for any location
     2. Context7 MCP server for up-to-date code documentation
-    3. E-gineering MCP server for additional capabilities
 
     Be concise and helpful in your responses.""",
     builtin_tools=mcp_tools
@@ -147,16 +123,6 @@ if __name__ == "__main__":
         print("   Or add it to demo/api/.env file")
         logfire.warn("ANTHROPIC_API_KEY not set")
 
-    # Check for optional MCP server tokens
-    if not os.getenv("CONTEXT7_API_KEY"):
-        print("\n💡 TIP: Context7 is running without an API key (free tier)")
-        print("   For higher rate limits, add CONTEXT7_API_KEY to demo/api/.env")
-
-    if not os.getenv("MCP_OAUTH_TOKEN"):
-        print("\n⚠️  Optional: E-gineering MCP server not configured")
-        print("   Add MCP_OAUTH_TOKEN to demo/api/.env to enable it")
-        print("   Note: DCR (Dynamic Client Registration) is not yet supported by pydantic-ai")
-
     # Get host and port from environment or use defaults
     host = os.getenv("HOST", "0.0.0.0")
     port = int(os.getenv("PORT", "8000"))
@@ -166,8 +132,6 @@ if __name__ == "__main__":
     print("\n💡 Available tools:")
     print("   - get_weather: Fetch weather for any location")
     print("   - context7: Up-to-date code documentation (free tier)")
-    if os.getenv("MCP_OAUTH_TOKEN"):
-        print("   - eg_mcp: E-gineering MCP server capabilities")
     print("\n📊 Logfire observability: https://logfire.pydantic.dev/")
     print("\nPress Ctrl+C to stop the server\n")
 
