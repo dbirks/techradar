@@ -32,32 +32,212 @@ This example collection uses real space-data APIs to show that a skill can carry
 - **Java/JBang:** `//DEPS` comments resolve Maven Central dependencies before compiling and running the source file.
 - **.NET 10:** file-based apps use `#:package` directives to restore NuGet packages directly from one `.cs` file.
 
-## Try the tools directly
+## Invoking the tools manually
+
+Every tool supports `--help`, returns nonzero on failure, keeps human diagnostics on stderr,
+and offers `--json` for agent-safe structured output. Nothing needs to be installed or built
+first: each runtime fetches its own dependencies on the first run, so expect a short pause the
+first time and near-instant runs afterwards.
+
+All paths below are relative to this directory (`2026/agent-skills`). The examples use the
+full path so they can be copied straight into a terminal; `cd` into a skill directory first if
+you prefer the shorter `./scripts/...` form the `SKILL.md` files use.
+
+Two invocation styles work for every skill:
+
+- **Direct execution** — the shebang picks the runtime. Requires the executable bit, which is
+  already set in this repository.
+- **Explicit runtime** — call the runtime yourself. This is the form to use on Windows, where
+  shebangs are not honored.
+
+### 1. `launch-watch` — Python via uv
 
 ```bash
-# Python + uv: upcoming rocket launches
-./plugins/orbital-briefing/skills/launch-watch/scripts/launch_watch.py next
-./plugins/orbital-briefing/skills/launch-watch/scripts/launch_watch.py list --days 30 --provider SpaceX --limit 5
-./plugins/orbital-briefing/skills/launch-watch/scripts/launch_watch.py list --days 30 --location "Cape Canaveral" --json
+# direct
+./plugins/orbital-briefing/skills/launch-watch/scripts/launch_watch.py --help
 
-# Bun: NOAA alerts and planetary K-index observations
-./plugins/orbital-briefing/skills/space-weather/scripts/space_weather.ts alerts --limit 5
-./plugins/orbital-briefing/skills/space-weather/scripts/space_weather.ts kp --storm-only --json
-
-# Deno: near-Earth asteroid approaches
-./plugins/orbital-briefing/skills/asteroid-watch/scripts/asteroid_watch.ts today --hazardous
-./plugins/orbital-briefing/skills/asteroid-watch/scripts/asteroid_watch.ts range --start 2026-08-01 --end 2026-08-07 --limit 10
-
-# Java + JBang: recently launched cataloged objects
-./plugins/orbital-briefing/skills/recent-satellites/scripts/RecentSatellites.java recent --limit 15
-./plugins/orbital-briefing/skills/recent-satellites/scripts/RecentSatellites.java find starlink --json
-
-# .NET 10: NASA's astronomy image and metadata
-./plugins/orbital-briefing/skills/astro-photo/scripts/AstroPhoto.cs today
-./plugins/orbital-briefing/skills/astro-photo/scripts/AstroPhoto.cs date --date 2025-12-25 --json
+# explicit runtime (also the Windows form)
+uv run ./plugins/orbital-briefing/skills/launch-watch/scripts/launch_watch.py --help
 ```
 
-Every tool must also support `--help`, return nonzero on failure, keep human diagnostics on stderr, and offer `--json` for agent-safe structured output.
+```text
+launch_watch.py next  [--location TEXT] [--provider TEXT] [--timezone TEXT] [--json]
+launch_watch.py list  [--days 1-365] [--location TEXT] [--provider TEXT]
+                      [--limit 1-50] [--all] [--timezone TEXT] [--json]
+```
+
+`--location` and `--provider` are case-insensitive substring matches; `--location` matches the
+launch site *and* the pad name. Defaults: `--days 30`, `--limit 5`, local timezone.
+
+```bash
+S=./plugins/orbital-briefing/skills/launch-watch/scripts/launch_watch.py
+
+$S next                                              # soonest launch anywhere
+$S next --provider SpaceX --timezone UTC             # soonest SpaceX launch, in UTC
+$S list --days 30 --provider SpaceX --limit 5         # next 5 SpaceX launches
+$S list --days 30 --location "Cape Canaveral" --json  # structured, one site
+$S list --days 7 --all                               # everything in the next week
+```
+
+Only one API request is made per invocation. The unauthenticated endpoint allows about 15
+requests per hour, so for repeated local runs use the stale development endpoint:
+
+```bash
+LL2_BASE_URL=https://lldev.thespacedevs.com/2.3.0 $S next
+```
+
+### 2. `space-weather` — Bun
+
+```bash
+# direct
+./plugins/orbital-briefing/skills/space-weather/scripts/space_weather.ts --help
+
+# explicit runtime (also the Windows form)
+bun --install=fallback ./plugins/orbital-briefing/skills/space-weather/scripts/space_weather.ts --help
+```
+
+```text
+space_weather.ts alerts  [--limit 1-100] [--scale G|S|R] [--contains TEXT] [--json]
+space_weather.ts kp      [--limit 1-100] [--storm-only] [--latest] [--json]
+```
+
+Defaults: `--limit 10` for `alerts`, `--limit 12` for `kp`. Both list newest first.
+
+```bash
+S=./plugins/orbital-briefing/skills/space-weather/scripts/space_weather.ts
+
+$S alerts --limit 5                        # 5 most recent bulletins
+$S alerts --scale G                        # geomagnetic only (S = solar radiation, R = radio)
+$S alerts --scale G --contains warning     # narrow to warnings
+$S alerts --limit 1 --json                 # full bulletin text lives in --json
+$S kp --latest                             # single most recent Kp reading
+$S kp --limit 8                            # last 8 three-hour readings
+$S kp --storm-only --json                  # Kp >= 5 only; exit 3 on a calm day
+```
+
+Human output shows only the bulletin headline so the terminal stays readable. The complete
+multi-line NOAA message is included in `--json` under `message`.
+
+### 3. `asteroid-watch` — Deno
+
+```bash
+# direct
+./plugins/orbital-briefing/skills/asteroid-watch/scripts/asteroid_watch.ts --help
+
+# explicit runtime (also the Windows form)
+deno run --allow-net=api.nasa.gov --allow-env=NASA_API_KEY \
+  ./plugins/orbital-briefing/skills/asteroid-watch/scripts/asteroid_watch.ts --help
+```
+
+The explicit form must repeat the permissions from the shebang; Deno denies everything else.
+
+```text
+asteroid_watch.ts today                      [--hazardous] [--limit 1-100]
+                                             [--sort distance|size|speed] [--json]
+asteroid_watch.ts range --start YYYY-MM-DD --end YYYY-MM-DD
+                                             [--hazardous] [--limit 1-100]
+                                             [--sort distance|size|speed] [--json]
+```
+
+Defaults: `--limit 10` for `today`, `--limit 20` for `range`, `--sort distance`. Sorting by
+`distance` puts the closest approach first; `size` and `speed` put the largest and fastest
+first. A `range` window may span at most 7 days.
+
+```bash
+S=./plugins/orbital-briefing/skills/asteroid-watch/scripts/asteroid_watch.ts
+
+$S today                                                  # today's approaches, closest first
+$S today --sort size --limit 5                            # 5 biggest instead
+$S today --hazardous                                      # exit 3 when none qualify
+$S range --start 2026-08-01 --end 2026-08-07 --limit 10
+$S range --start 2026-08-01 --end 2026-08-07 --hazardous --json
+```
+
+"Potentially hazardous" is NASA's catalog classification based on size and orbit geometry. It
+is not a prediction of impact, and the JSON output carries that caveat in a `note` field.
+
+### 4. `recent-satellites` — Java via JBang
+
+```bash
+# direct
+./plugins/orbital-briefing/skills/recent-satellites/scripts/RecentSatellites.java --help
+
+# explicit runtime (also the Windows form)
+jbang ./plugins/orbital-briefing/skills/recent-satellites/scripts/RecentSatellites.java --help
+```
+
+The very first run resolves Maven dependencies and compiles, which takes a few seconds. JBang
+caches the result, so later runs start quickly.
+
+```text
+RecentSatellites.java recent        [--limit 1-100] [--name TEXT]
+                                    [--inclination-min DEGREES] [--json]
+RecentSatellites.java find QUERY    [--limit 1-100] [--json]
+```
+
+`QUERY` is positional and required. It searches object name, international designator, and
+NORAD catalog ID. Default `--limit 20` for both.
+
+```bash
+S=./plugins/orbital-briefing/skills/recent-satellites/scripts/RecentSatellites.java
+
+$S recent --limit 15                   # most recently cataloged objects
+$S recent --inclination-min 80         # near-polar and sun-synchronous orbits
+$S recent --name starlink --limit 5
+$S find starlink --json
+$S find 2026-171                       # everything from one launch
+```
+
+Covers launches from the last 30 days. One launch produces many catalog entries, so expect
+payloads, rocket bodies, and debris from the same international designator.
+
+### 5. `astro-photo` — .NET 10 file-based C#
+
+```bash
+# direct — note the required `--`
+./plugins/orbital-briefing/skills/astro-photo/scripts/AstroPhoto.cs -- today --help
+
+# explicit runtime (also the Windows form)
+dotnet run ./plugins/orbital-briefing/skills/astro-photo/scripts/AstroPhoto.cs -- today --help
+```
+
+**Always pass `--` after the script path.** The `dotnet` CLI claims `--help` and `-h` for
+itself, so `AstroPhoto.cs today --help` prints `dotnet run` help rather than this tool's help.
+The separator forwards everything after it to the app, and is harmless on commands that do not
+need it, so use it consistently.
+
+```text
+AstroPhoto.cs -- today                   [--hd] [--json]
+AstroPhoto.cs -- date --date YYYY-MM-DD  [--hd] [--json]
+```
+
+`--date` is required for the `date` command. The archive starts 1995-06-16; earlier or future
+dates are rejected before any network call.
+
+```bash
+S=./plugins/orbital-briefing/skills/astro-photo/scripts/AstroPhoto.cs
+
+$S -- today                              # today's image and full explanation
+$S -- today --hd                         # prefer the high-resolution URL
+$S -- today --json
+$S -- date --date 2025-12-25 --json
+```
+
+`--hd` applies only to image entries. Video entries return the video URL with `media_type` set
+to `video`, and `--hd` is ignored for them.
+
+### Quick check that all five still work
+
+```bash
+./plugins/orbital-briefing/skills/launch-watch/scripts/launch_watch.py next
+./plugins/orbital-briefing/skills/space-weather/scripts/space_weather.ts kp --latest
+./plugins/orbital-briefing/skills/asteroid-watch/scripts/asteroid_watch.ts today --limit 3
+./plugins/orbital-briefing/skills/recent-satellites/scripts/RecentSatellites.java recent --limit 3
+./plugins/orbital-briefing/skills/astro-photo/scripts/AstroPhoto.cs -- today
+```
+
+If one of them exits `4`, the upstream API is rate-limiting or unreachable rather than the
+script being broken. See the exit-code table below.
 
 ### Shared exit codes
 
