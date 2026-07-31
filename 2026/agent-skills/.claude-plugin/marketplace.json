@@ -1,0 +1,14 @@
+{
+  "name": "dbirks-techradar",
+  "description": "Tech Radar demo skills that query live public space-data APIs.",
+  "owner": {
+    "name": "dbirks"
+  },
+  "plugins": [
+    {
+      "name": "orbital-briefing",
+      "source": "./plugins/orbital-briefing",
+      "description": "Agent skills backed by live public space-data APIs."
+    }
+  ]
+}
