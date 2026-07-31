@@ -259,11 +259,31 @@ as different locations, so filtering on one excludes the other.
 ### Optional API keys
 
 `NASA_API_KEY` is honored by `asteroid-watch` and `astro-photo`. Without it both fall back to
-NASA's shared `DEMO_KEY`, which is heavily rate-limited and will start returning exit code `4`
-after a handful of calls. A free key from https://api.nasa.gov/ removes that limit:
+NASA's shared `DEMO_KEY`, which is limited far more tightly than the docs imply. Measured from
+the API's own response headers:
+
+| Key | `x-ratelimit-limit` | Recovery after exhaustion |
+|---|---|---|
+| `DEMO_KEY` | 10 (shared per IP) | `retry-after` observed at over 8 hours |
+| Personal key | 4000 | one hour |
+
+So `DEMO_KEY` is fine for a first look and useless for rehearsing a talk: about ten calls
+across every tool, then exit code `4` for the rest of the day. Get a free key — the form at
+https://api.nasa.gov/ asks only for a name, email, and accepting the terms, and returns the
+key immediately.
 
 ```bash
 export NASA_API_KEY=your-key-here
+```
+
+Because zsh sources `~/.zshrc` only for interactive shells, an export placed there is not
+visible to non-interactive tooling. Use `~/.zshenv` if something scripted needs to see it.
+
+Check which limit is in effect at any time:
+
+```bash
+curl -s -D - -o /dev/null "https://api.nasa.gov/planetary/apod?api_key=${NASA_API_KEY:-DEMO_KEY}" \
+  | grep -i ratelimit
 ```
 
 `launch-watch` needs no key, but the unauthenticated Launch Library 2 endpoint allows only
