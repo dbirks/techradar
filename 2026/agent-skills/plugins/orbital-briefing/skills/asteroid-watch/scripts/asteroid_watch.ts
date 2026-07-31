@@ -61,8 +61,22 @@ function daysBetween(start: string, end: string): number {
   return Math.round(ms / 86_400_000);
 }
 
+/**
+ * Read the required NASA API key. There is deliberately no fallback to NASA's
+ * shared DEMO_KEY: it allows only about 10 requests per IP address and then
+ * blocks for hours, which fails in a way that looks like a broken tool.
+ */
 function apiKey(): string {
-  return Deno.env.get("NASA_API_KEY")?.trim() || "DEMO_KEY";
+  const key = Deno.env.get("NASA_API_KEY")?.trim();
+  if (!key) {
+    die(
+      "NASA_API_KEY is not set. Get a free key at https://api.nasa.gov/ " +
+        "(name, email, accept terms) and export it:\n" +
+        "       export NASA_API_KEY=your-key-here",
+      EXIT_BAD_INPUT,
+    );
+  }
+  return key;
 }
 
 async function fetchFeed(start: string, end: string): Promise<Record<string, unknown>> {
@@ -86,8 +100,8 @@ async function fetchFeed(start: string, end: string): Promise<Record<string, unk
 
   if (response.status === 429) {
     die(
-      "NASA API rate limit reached. DEMO_KEY is shared and heavily limited; " +
-        "set NASA_API_KEY to a free key from https://api.nasa.gov/.",
+      "NASA API rate limit reached for this key (4000 requests per hour). " +
+        "Check the x-ratelimit-remaining response header and retry later.",
       EXIT_API_ERROR,
     );
   }
@@ -258,7 +272,7 @@ await new Command()
   .version("0.1.0")
   .description(
     "Near-Earth asteroid close approaches from NASA NeoWs. " +
-      "Set NASA_API_KEY to avoid the shared DEMO_KEY rate limit.",
+      "Requires NASA_API_KEY; get a free key at https://api.nasa.gov/.",
   )
   .action(function () {
     this.showHelp();

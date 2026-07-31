@@ -258,19 +258,23 @@ as different locations, so filtering on one excludes the other.
 
 ### Optional API keys
 
-`NASA_API_KEY` is honored by `asteroid-watch` and `astro-photo`. Without it both fall back to
-NASA's shared `DEMO_KEY`, which is limited far more tightly than the docs imply. Measured from
-the API's own response headers:
+`NASA_API_KEY` is **required** by `asteroid-watch` and `astro-photo`. Without it they exit `5`
+with instructions rather than falling back to NASA's shared `DEMO_KEY`. That fallback was
+removed deliberately: `DEMO_KEY` is limited far more tightly than the docs imply, and silently
+degrading to it turns a missing-configuration problem into what looks like a broken tool.
+Measured from the API's own response headers:
 
 | Key | `x-ratelimit-limit` | Recovery after exhaustion |
 |---|---|---|
 | `DEMO_KEY` | 10 (shared per IP) | `retry-after` observed at over 8 hours |
 | Personal key | 4000 | one hour |
 
-So `DEMO_KEY` is fine for a first look and useless for rehearsing a talk: about ten calls
-across every tool, then exit code `4` for the rest of the day. Get a free key — the form at
-https://api.nasa.gov/ asks only for a name, email, and accepting the terms, and returns the
-key immediately.
+`DEMO_KEY` is the literal string `DEMO_KEY`: NASA's public, unauthenticated key, published in
+their docs so an endpoint can be tried from a browser. It is shared by everyone and counted per
+IP address, so its budget is often already spent before you make a single call.
+
+Get a free key instead — the form at https://api.nasa.gov/ asks only for a name, email, and
+accepting the terms, and returns the key immediately.
 
 ```bash
 export NASA_API_KEY=your-key-here

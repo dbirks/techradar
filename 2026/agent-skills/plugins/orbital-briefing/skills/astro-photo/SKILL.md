@@ -2,7 +2,7 @@
 name: astro-photo
 description: Retrieve NASA Astronomy Picture of the Day metadata for today or a specified date, including title, explanation, media type, image or video URL, and copyright attribution. Use when the user asks for today's astronomy image, an APOD from a date, or an astronomy image description.
 license: MIT
-compatibility: Requires the .NET 10 SDK and outbound HTTPS access to api.nasa.gov. NASA_API_KEY is optional; DEMO_KEY is used otherwise.
+compatibility: Requires the .NET 10 SDK, a NASA_API_KEY environment variable, and outbound HTTPS access to api.nasa.gov.
 metadata:
   runtime: dotnet-file-app
   data-source: nasa-apod
@@ -29,6 +29,8 @@ Prefer `--json` for programmatic use. Preserve the returned copyright or attribu
 
 - APOD's archive starts 1995-06-16; earlier or future dates are rejected.
 - `--hd` selects `hdurl` when the entry is an image and an HD URL exists.
-- Video entries return the video URL with `media_type` set to `video`.
-- `DEMO_KEY` is heavily rate-limited; set `NASA_API_KEY` for repeated use.
+- Video entries return the video URL with `media_type` set to `video`, and `--hd` is ignored.
+- Exit code `5` with a `NASA_API_KEY is not set` message means the environment is missing the
+  key. Get a free one at https://api.nasa.gov/. There is no `DEMO_KEY` fallback, because that
+  shared key allows only about 10 requests per IP and then blocks for hours.
 - On any platform, including Windows, run `dotnet run scripts/AstroPhoto.cs -- today` instead of executing the file directly.

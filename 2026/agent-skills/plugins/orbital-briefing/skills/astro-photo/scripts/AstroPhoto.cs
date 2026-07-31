@@ -53,7 +53,7 @@ dateCommand.SetAction((parseResult, ct) =>
     RunAsync(parseResult.GetValue(dateOption), parseResult.GetValue(hdOption), parseResult.GetValue(jsonOption), ct));
 
 var root = new RootCommand(
-    "NASA Astronomy Picture of the Day metadata. Set NASA_API_KEY to avoid the shared DEMO_KEY rate limit.");
+    "NASA Astronomy Picture of the Day metadata. Requires NASA_API_KEY; get a free key at https://api.nasa.gov/.");
 root.Subcommands.Add(todayCommand);
 root.Subcommands.Add(dateCommand);
 
@@ -67,10 +67,15 @@ static int Die(string message, int code)
     return code;
 }
 
-static string ApiKey()
+/// <summary>
+/// Read the required NASA API key. There is deliberately no fallback to NASA's
+/// shared DEMO_KEY: it allows only about 10 requests per IP address and then
+/// blocks for hours, which fails in a way that looks like a broken tool.
+/// </summary>
+static string? ApiKey()
 {
     var key = Environment.GetEnvironmentVariable("NASA_API_KEY");
-    return string.IsNullOrWhiteSpace(key) ? "DEMO_KEY" : key.Trim();
+    return string.IsNullOrWhiteSpace(key) ? null : key.Trim();
 }
 
 async Task<int> RunAsync(string? rawDate, bool hd, bool asJson, CancellationToken ct)
@@ -98,9 +103,19 @@ async Task<int> RunAsync(string? rawDate, bool hd, bool asJson, CancellationToke
         requested = parsed;
     }
 
+    var key = ApiKey();
+    if (key is null)
+    {
+        return Die(
+            "NASA_API_KEY is not set. Get a free key at https://api.nasa.gov/ "
+            + "(name, email, accept terms) and export it:\n"
+            + "       export NASA_API_KEY=your-key-here",
+            ExitBadInput);
+    }
+
     var url = requested is null
-        ? $"{ApodUrl}?api_key={Uri.EscapeDataString(ApiKey())}"
-        : $"{ApodUrl}?date={requested:yyyy-MM-dd}&api_key={Uri.EscapeDataString(ApiKey())}";
+        ? $"{ApodUrl}?api_key={Uri.EscapeDataString(key)}"
+        : $"{ApodUrl}?date={requested:yyyy-MM-dd}&api_key={Uri.EscapeDataString(key)}";
 
     using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(TimeoutSeconds) };
     client.DefaultRequestHeaders.UserAgent.ParseAdd(UserAgent);
@@ -123,8 +138,8 @@ async Task<int> RunAsync(string? rawDate, bool hd, bool asJson, CancellationToke
     if ((int)response.StatusCode == 429)
     {
         return Die(
-            "NASA API rate limit reached. DEMO_KEY is shared and heavily limited; "
-            + "set NASA_API_KEY to a free key from https://api.nasa.gov/.",
+            "NASA API rate limit reached for this key (4000 requests per hour). "
+            + "Check the x-ratelimit-remaining response header and retry later.",
             ExitApiError);
     }
     if (!response.IsSuccessStatusCode)
