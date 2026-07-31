@@ -1,10 +1,16 @@
-#!/usr/bin/env dotnet
+#!/usr/bin/env -S dotnet --
 #:package System.CommandLine@2.0.10
 
 // NASA Astronomy Picture of the Day metadata.
 //
 // This is a .NET 10 file-based app: the #:package directive above restores the
 // only external dependency straight from NuGet, with no .csproj involved.
+//
+// The trailing `--` in the shebang is required, not decoration. Without it the
+// dotnet CLI claims `--help` and `-h` for itself, so `AstroPhoto.cs today
+// --help` would print `dotnet run` usage instead of this tool's. The `-S` flag
+// lets env split the shebang into separate arguments so `--` can be included.
+// This file must keep LF line endings and no BOM for the shebang to work.
 
 using System.CommandLine;
 using System.Globalization;

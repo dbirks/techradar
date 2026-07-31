@@ -194,21 +194,32 @@ payloads, rocket bodies, and debris from the same international designator.
 ### 5. `astro-photo` — .NET 10 file-based C#
 
 ```bash
-# direct — note the required `--`
-./plugins/orbital-briefing/skills/astro-photo/scripts/AstroPhoto.cs -- today --help
+# direct — no separator needed
+./plugins/orbital-briefing/skills/astro-photo/scripts/AstroPhoto.cs today --help
 
-# explicit runtime (also the Windows form)
+# explicit runtime (also the Windows form) — `--` IS required here
 dotnet run ./plugins/orbital-briefing/skills/astro-photo/scripts/AstroPhoto.cs -- today --help
 ```
 
-**Always pass `--` after the script path.** The `dotnet` CLI claims `--help` and `-h` for
-itself, so `AstroPhoto.cs today --help` prints `dotnet run` help rather than this tool's help.
-The separator forwards everything after it to the app, and is harmless on commands that do not
-need it, so use it consistently.
+The `--` asymmetry is worth understanding, because the failure is confusing either way. The
+dotnet CLI claims `--help` and `-h` for itself, so something has to tell it to forward
+arguments to the app. This script's shebang does that itself:
 
 ```text
-AstroPhoto.cs -- today                   [--hd] [--json]
-AstroPhoto.cs -- date --date YYYY-MM-DD  [--hd] [--json]
+#!/usr/bin/env -S dotnet --
+```
+
+`-S` lets `env` split the line into separate arguments so the `--` can live in the shebang,
+which is the form Microsoft's file-based apps documentation recommends. Consequences:
+
+- **Direct execution:** do *not* add `--`. The shebang already supplied it, and a second one
+  makes System.CommandLine treat the rest as literals, giving `'today' was not matched`.
+- **Explicit `dotnet run`:** you *must* add `--`, since no shebang is involved. Without it,
+  `--help` prints `dotnet run` usage instead of the tool's.
+
+```text
+AstroPhoto.cs today                   [--hd] [--json]
+AstroPhoto.cs date --date YYYY-MM-DD  [--hd] [--json]
 ```
 
 `--date` is required for the `date` command. The archive starts 1995-06-16; earlier or future
@@ -217,14 +228,15 @@ dates are rejected before any network call.
 ```bash
 S=./plugins/orbital-briefing/skills/astro-photo/scripts/AstroPhoto.cs
 
-$S -- today                              # today's image and full explanation
-$S -- today --hd                         # prefer the high-resolution URL
-$S -- today --json
-$S -- date --date 2025-12-25 --json
+$S today                                 # today's image and full explanation
+$S today --hd                            # prefer the high-resolution URL
+$S today --json
+$S date --date 2025-12-25 --json
+$S date --date 2026-07-13 --json         # a video entry
 ```
 
 `--hd` applies only to image entries. Video entries return the video URL with `media_type` set
-to `video`, and `--hd` is ignored for them.
+to `video`, a null `hdurl`, and `--hd` ignored rather than erroring.
 
 ### Quick check that all five still work
 
@@ -233,7 +245,7 @@ to `video`, and `--hd` is ignored for them.
 ./plugins/orbital-briefing/skills/space-weather/scripts/space_weather.ts kp --latest
 ./plugins/orbital-briefing/skills/asteroid-watch/scripts/asteroid_watch.ts today --limit 3
 ./plugins/orbital-briefing/skills/recent-satellites/scripts/RecentSatellites.java recent --limit 3
-./plugins/orbital-briefing/skills/astro-photo/scripts/AstroPhoto.cs -- today
+./plugins/orbital-briefing/skills/astro-photo/scripts/AstroPhoto.cs today
 ```
 
 If one of them exits `4`, the upstream API is rate-limiting or unreachable rather than the

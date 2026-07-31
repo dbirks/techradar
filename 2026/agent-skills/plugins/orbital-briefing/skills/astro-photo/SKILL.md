@@ -12,15 +12,23 @@ metadata:
 
 Use `scripts/AstroPhoto.cs` to retrieve NASA APOD metadata.
 
-Always put `--` after the script path. The `dotnet` CLI consumes `--help` and `-h`
-itself, so without the separator those flags print `dotnet run` help instead of this
-tool's help.
+Run it directly with no separator. The script's shebang is `#!/usr/bin/env -S dotnet --`,
+which already supplies the `--` the dotnet CLI needs in order to forward `--help` and `-h`
+to the app instead of consuming them. Adding another `--` yourself breaks argument
+matching.
 
 ```bash
-scripts/AstroPhoto.cs -- today --help
-scripts/AstroPhoto.cs -- date --help
-scripts/AstroPhoto.cs -- today --json
-scripts/AstroPhoto.cs -- date --date 2025-12-25 --json
+scripts/AstroPhoto.cs today --help
+scripts/AstroPhoto.cs date --help
+scripts/AstroPhoto.cs today --json
+scripts/AstroPhoto.cs date --date 2025-12-25 --json
+```
+
+When invoking the runtime explicitly, the `--` is required because there is no shebang in
+play:
+
+```bash
+dotnet run scripts/AstroPhoto.cs -- today --json
 ```
 
 Prefer `--json` for programmatic use. Preserve the returned copyright or attribution field and do not claim every returned asset is public domain.
