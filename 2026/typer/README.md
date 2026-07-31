@@ -64,7 +64,7 @@ Typer automatically exposes `buy` and `sell`, converts `--quantity` to an intege
 
 ## Demo script
 
-The complete executable example is [`fruit_stand.py`](./fruit_stand.py), a deliberately silly, deterministic "Interplanetary Fruit Stand." It does not require an API key or network connection, so the presentation can focus entirely on how Typer generates and validates the CLI.
+The complete executable example is [`fruit_stand.py`](./fruit_stand.py), a small, deterministic fruit stand. It does not require an API key or network connection, so the presentation can focus entirely on how Typer generates and validates the CLI.
 
 Show the generated top-level help:
 
@@ -78,16 +78,16 @@ Show help for one subcommand:
 ./fruit_stand.py buy --help
 ```
 
-Buy several organic mangoes imported from Mars:
+Buy several organic mangoes from a named orchard:
 
 ```bash
-./fruit_stand.py buy mango --quantity 4 --from Mars --organic
+./fruit_stand.py buy mango --quantity 4 --from "Hill Orchard" --organic
 ```
 
-Preview selling all available moonberries:
+Preview selling all available blueberries:
 
 ```bash
-./fruit_stand.py sell moonberries --price 3.50 --all --dry-run
+./fruit_stand.py sell blueberries --price 3.50 --all --dry-run
 ```
 
 The script can also be run explicitly through `uv`:

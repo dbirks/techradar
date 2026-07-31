@@ -13,7 +13,7 @@ import typer
 
 app = typer.Typer(
     no_args_is_help=True,
-    help="Trade produce at the Interplanetary Fruit Stand.",
+    help="Buy and sell produce at the fruit stand.",
 )
 
 
@@ -26,8 +26,8 @@ def buy(
     ] = 1,
     origin: Annotated[
         str,
-        typer.Option("--from", help="Planet or moon the fruit came from."),
-    ] = "Earth",
+        typer.Option("--from", help="Farm or orchard the fruit came from."),
+    ] = "the local orchard",
     organic: Annotated[
         bool,
         typer.Option(
@@ -36,7 +36,7 @@ def buy(
         ),
     ] = False,
 ) -> None:
-    """Buy fruit from a planetary market."""
+    """Buy fruit from the stand."""
     kind = "organic" if organic else "conventional"
     typer.echo(f"Buying {quantity} {kind} {fruit} from {origin}.")
 
@@ -57,7 +57,7 @@ def sell(
         typer.Option("--dry-run", help="Preview the sale without completing it."),
     ] = False,
 ) -> None:
-    """Sell fruit back to the market."""
+    """Sell fruit back to the stand."""
     amount = "all available" if all_inventory else "one"
     action = "Would sell" if dry_run else "Selling"
     typer.echo(f"{action} {amount} {fruit} at ${price:.2f} each.")
